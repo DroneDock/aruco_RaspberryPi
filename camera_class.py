@@ -19,32 +19,30 @@ Quick note regarding the main difference between Jetson Nano & Raspberry Pi, to 
 
 Created by: Jalen
 """
+import multiprocessing as mp
+# Standard Imports
+import time
+from pathlib import Path
+import os
 
-class aruco_cam:
-    
-    def cam_run(self):
-        # Standard Imports
-        import time
-        from pathlib import Path
-        import os
+# Third-Party Imports
+import cv2
+import numpy as np
+from picamera import PiCamera
+from picamera.array import PiRGBArray
+import yaml
 
-        # Third-Party Imports
-        import cv2
-        import numpy as np
-        from picamera import PiCamera
-        from picamera.array import PiRGBArray
-        import yaml
+# Project-Specific Imports
+from arucoDict import ARUCO_DICT 
+class aruco_cam(object):
+    def cam_run(self,R,theta_degrees):
 
-        # Project-Specific Imports
-        from arucoDict import ARUCO_DICT 
         
         #DEFINITIONS ---------------------------------------------------------------------------------------------------------------------------------
         # Marker
         MARKER_SIZE = 60  # Square size [mm] - allow for pose and distance estimation
         arucoDict = cv2.aruco.Dictionary_get(ARUCO_DICT["DICT_6X6_50"])
         arucoParams = cv2.aruco.DetectorParameters_create()  # Use default parameters
-
-
 
         # LOAD CAMERA DATA -----------------------------------------------------------------------------------------------------------------------------
         # Load the camera matrix and distortion coefficients from YAML file
@@ -103,21 +101,18 @@ class aruco_cam:
                         x, y, z = translation_vector
 
                         # Calculate radius (R)
-                        global R 
-                        R = np.sqrt(x**2 + y**2)
+                        R.value = np.sqrt(x**2 + y**2)
                 
                         # Calculate polar angle (theta) in radians
                         theta = np.arctan2(y, x)  # arctan2 ensures correct usage of four quadrants
                 
                         # Convert theta to degrees for better readability and to generate 0 to 360 degrees
-                        global theta_degrees 
-                        theta_degrees = np.degrees(theta) + 180
+                        theta_degrees.value = np.degrees(theta) + 180
 
                         print(f"Marker ID: {markerID}")
                         print(f"Translation Vector (Cartesian): {translation_vector} mm")
-                        print(f"Translation Vector (Polar): R = {R} mm, θ = {theta_degrees} degrees")
+                        print(f"Translation Vector (Polar): R = {R.value} mm, θ = {theta_degrees.value} degrees")
                         print("-----------------------------")
-
                         #return R, theta_degrees
 
                         # print("Translation Vector (tvec):")
@@ -148,7 +143,7 @@ class aruco_cam:
                     cv2.drawFrameAxes(image, camMatrix, distCof, rVec[i], tVec[i], length=50, thickness=3)
             
             # Comment out this line to remove camera view
-            cv2.imshow("Pose Estimation Frame", image)
+            #cv2.imshow("Pose Estimation Frame", image)
 
             # Terminate program and cleanup when 'q' is pressed
             key = cv2.waitKey(1)
@@ -160,3 +155,21 @@ class aruco_cam:
 
         cv2.destroyAllWindows()
         vs.stop()
+
+if __name__ == "__main__":
+    R = mp.Value('f', 0.0)  # Use 'f' for float type
+    theta_degrees = mp.Value('f', 0.0)  # Use 'f' for float type
+
+    fetchProcess = mp.Process(target=cam_run, args=(R,theta_degrees))
+    BProcess = mp.Process(target=out, args=(R,theta_degrees))
+    
+    BProcess.daemon = True
+    fetchProcess.daemon = True
+    
+    fetchProcess.start()
+    BProcess.start()
+    try:
+        while True:
+            pass
+    except KeyboardInterrupt:
+        print("Program has terminated")
