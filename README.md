@@ -24,6 +24,10 @@ The main folders/files of the project are shown
 |
 |----- 🐍 pose estimation.py
 |
+|----- 📁 docs
+|       |----- 📄 raspberrypi_cv_setup.docx
+|       |----- 📄 Jetsonnano_cv_setup.docx
+
 ```
 * 📁 **aruco_tags/DICT_6x6_50** - Contains all the aruco tags of the specific aruco dictionary 6x6_50. In this project, we will be using aruco ID 25.
 * 📁 **camera_calibration_final** - Contains all the files to run camera calibration via the ArUco board approach. These files are arranged sequentially, where a simple test of the camera should be conducted with 'test_rpicamera.py, followed by generating the aruco board --> generating data --> calibrating the camera --> validating it.
